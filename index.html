@@ -25,8 +25,8 @@
           this.setState({ auth: {}});
         }
         async exchangeTokenForUser(){
-            console.log('exchangeTokenForUser1111');
-            console.log(this.state);
+            // console.log('exchangeTokenForUser1111');
+            // console.log(this.state);
           const token = window.localStorage.getItem('token');
           if(token){
             const auth = (await axios.get('/api/auth', {
