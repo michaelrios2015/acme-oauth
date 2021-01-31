@@ -7,14 +7,15 @@ app.engine('html', require('ejs').renderFile);
 const { models: { User }} = require('./db');
 const path = require('path');
 
+//so our normal route but now with a header thing?? so is the headers just so you can send the clint id?? client id for our authorization not for a user
+//is needed so we go to the right place in github
 app.get('/', (req, res)=> res.render(path.join(__dirname, 'index.html'), { GITHUB_CLIENT_ID: process.env.GITHUB_CLIENT_ID }));
 
-app.get('/api/auth', async(req, res, next)=> {
-    
+app.get('/api/auth', async(req, res, next)=> {  
     try {
         // console.log('------------/api/auth---------------------');
         // console.log(req.headers.authorization);
-    res.send(await User.byToken(req.headers.authorization));
+      res.send(await User.byToken(req.headers.authorization));
   }
   catch(ex){
     // console.log(req.headers.authorization);
@@ -22,6 +23,7 @@ app.get('/api/auth', async(req, res, next)=> {
   }
 });
 
+//this comes first in video
 app.get('/github/callback', async(req, res, next)=> {
     // console.log('------------/github/callback---------------------');
     // console.log(req.query.code);

@@ -22,6 +22,8 @@ const UserLogin = conn.define('userlogin', {
 UserLogin.belongsTo(User);
 User.hasMany(UserLogin);  
 
+//just sending in a token and returning a user so this should be the same as last week??
+//except now the token is the the client_id?? 
 User.byToken = async(token)=> {
   try {
     const { id } = await jwt.verify(token, process.env.JWT);
