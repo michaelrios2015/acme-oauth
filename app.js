@@ -34,11 +34,11 @@ app.get('/github/callback', async(req, res, next)=> {
     console.log(token);
     res.send(`
       <html>
-       <body>
-       <script>
-        window.localStorage.setItem('token', '${token}');
-         window.document.location = '/';
-       </script>
+        <body>
+          <script>
+            window.localStorage.setItem('token', '${token}');
+            window.document.location = '/';
+          </script>
         </body>
       </html>
     `);

@@ -27,10 +27,8 @@ User.hasMany(UserLogin);
 User.byToken = async(token)=> {
   try {
     const { id } = await jwt.verify(token, process.env.JWT);
-    // const user = await User.findByPk(id);
     const user = await User.findByPk(id, {include: UserLogin });
 
-    // console.log(user1.data)
     if(user){
         // userLogin here??
 
@@ -39,8 +37,6 @@ User.byToken = async(token)=> {
     throw 'noooo';
   }
   catch(ex){
-    // console.log('--------------ex--------------------')
-    //   console.log(ex)
     const error = Error('bad credentials');
     error.status = 401;
     throw error;
@@ -53,76 +49,75 @@ User.byToken = async(token)=> {
 const GITHUB_CODE_FOR_TOKEN_URL = 'https://github.com/login/oauth/access_token';
 const GITHUB_ACCESS_TOKEN_FOR_USER_URL = 'https://api.github.com/user';
 
+//exhange a passed in code for an access_token or throw error
+const codeForGithubToken = async(code)=> {
+  const response = await axios.post(GITHUB_CODE_FOR_TOKEN_URL,
+    {
+      client_id: process.env.GITHUB_CLIENT_ID,
+      client_secret: process.env.GITHUB_CLIENT_SECRET,
+      code
+    },
+    {
+      headers: {
+        accept: 'application/json'
+      }
+    }
+  );
+  const { access_token, error } = response.data;
+  if(error){
+    const _error = Error(error);
+    _error.status = 401;
+    throw _error;
+  }
+  return access_token;
+};
+
+//exchange access_token for github user
+const accessTokenForGithubUser = async(access_token)=> {
+  response = await axios.get(GITHUB_ACCESS_TOKEN_FOR_USER_URL, {
+    headers: {
+      authorization: `token ${ access_token }`
+    }
+  });
+  return response.data;
+};
+
+//getUser from githubUser
+const getUserFromGithubUser = async({ login, id, ...other})=> {
+  let user = await User.findOne({
+    where: {
+      username: login,
+      githubId: id
+    }
+  });
+  if(!user){
+    user = await User.create({ username: login, githubId: id });
+    userlogin = await UserLogin.create({ userId: user.id });
+
+  }
+  else {
+    //picks up github update??
+    //await user.update({ github });
+    userlogin = await UserLogin.create({ userId: user.id });
+  }
+  return user;
+};
+
 //the authenticate methods is passed a code which has been sent by github
 //if successful it will return a token which identifies a user in this app
 User.authenticate = async(code)=> {
-    // console.log('---------------code--------------------');
-    // console.log(code);
-
-    try{
-        // console.log("-------User.authenicate-----------------");
-        // console.log(process.env.client_id);
-        //I assume this comes first and we post a request to github
-        // console.log(process.env.client_secret);
-        let response = await axios.post('https://github.com/login/oauth/access_token', {
-            //essentially magic
-           
-            code: code,
-            client_id: process.env.client_id,
-            client_secret: process.env.client_secret
-        }, {
-            headers:{
-                accept: 'application/json'
-            }
-        })
-        //we get a response
-        // console.log("------------response-----------------");
-        // console.log(response.data);
-        const data = response.data;
-        //something went wrong with the response
-        if(data.error){
-            const error = Error(data.error);
-            error.status = 401;
-            throw error
-        }
-        //we get the response again?? not sure
-        response = await axios.get('https://api.github.com/user', {
-            headers: {
-                authorization: `token ${ data.access_token }`
-            }
-        })
-        //at this point we have gotten a user from github
-        const { login, ...github } = response.data;
-        //we already have the so we find them
-        let user = await User.findOne({
-            where: {
-                username: login
-            }
-        })
-        //we don't have the user so we make the user
-        if(!user){
-            user = await User.create({ username: login, github });
-            userlogin = await UserLogin.create({ userId: user.id });
-
-        }
-        else {
-            //picks up github update??
-            await user.update({ github });
-            userlogin = await UserLogin.create({ userId: user.id });
-        }
-
-        //I think this is everything from the last lecture using a token instead of 
-        //an id so only the login patron can get the info or something
-        const jwToken = jwt.sign({ id: user.id }, process.env.JWT);
-        // console.log(jwToken);
-        return jwToken;
-    } 
-    catch(ex){
-        console.log(process.env.client_id);
-        next(ex)
-    } 
   
-    // throw 'nooooo';
+  //we get the magic token from github
+  const access_token = await codeForGithubToken(code);
+  //we use magic acces token to get user info from github
+  const githubUser = await accessTokenForGithubUser(access_token);
+  //we put user in our database or update user
+  const user = await getUserFromGithubUser(githubUser);
+  //turn user into JWT token so only login user can see data
+  const jwToken = jwt.sign({ id: user.id }, process.env.JWT);
+  
+  return jwToken;
+ 
 };
 
 const syncAndSeed = async()=> {

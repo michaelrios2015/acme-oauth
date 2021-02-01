@@ -24,6 +24,7 @@
           window.localStorage.removeItem('token');
           this.setState({ auth: {}});
         }
+        //this is just for JWT we are out of OAUTH
         async exchangeTokenForUser(){
             // console.log('exchangeTokenForUser1111');
             // console.log(this.state);
@@ -43,6 +44,7 @@
             console.log(this.state);
           this.exchangeTokenForUser();
         }
+        // also just JWT stuff 
         async login(credential){
           const { token } = (await axios.post('/api/auth', credential)).data;
           window.localStorage.setItem('token', token);
@@ -53,22 +55,25 @@
           const { login, logout } = this;
           console.log('render');
             console.log(this.state);
+            //we don'y have a user so let them try and login 
           if(!auth.id){
             return (
               <a href={`https://github.com/login/oauth/authorize?client_id=${window.GITHUB_CLIENT_ID}`}>Login to Github</a>
             );
           }
+          //we have a user show their info
           else {
               console.log(auth.userlogins[0].createdAt)
             //   { auth.userlogins ? auth.userlogins[0].createdAt : 'none' }
-                
+                let i = 0;
               return (
               <div>
-                <button onClick={ logout }>Logout ({ auth.username})</button>
+                <button onClick={ logout }>Logout ({ auth.username })</button>
                 <br/>
                 { auth.userlogins.map( login => {
+                  i++;
                     return (
-                        <div>
+                        <div key = {i}>
                           { login.createdAt } 
                         
                           <br />
